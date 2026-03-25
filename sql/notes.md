@@ -52,4 +52,6 @@ then ROUND() only what you're displaying in SELECT.
 Solved both practice problems without looking at the scaffold on the second one.
 That felt good.
 
+Next Session: Multiple Subqueries
+
 ---
