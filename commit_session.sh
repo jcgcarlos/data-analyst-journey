@@ -118,17 +118,34 @@ fi
 DIFF_DETAIL=$(git diff --staged --name-only)
 DIFF_STAT=$(git diff --staged --stat)
 
+# Filter to only study files (exclude READMEs, scripts, config)
+STUDY_FILES=$(echo "$DIFF_DETAIL" | grep -v "README.md" | grep -v "commit_session.sh" | grep -v ".txt" || true)
+
+# If there are study files, get their diff for context
+if [ -n "$STUDY_FILES" ]; then
+  STUDY_DIFF=$(git diff --staged -- $STUDY_FILES | head -500)
+else
+  STUDY_DIFF=""
+fi
+
 COMMIT_MSG=$(claude -p "You are writing a Git commit message for JC, a BI Specialist upskilling toward a Senior Data Analyst role. JC studies SQL, Python, Statistics, and Looker/LookML.
 
-Here are the files changed this session:
+Here are ALL files changed this session:
 $DIFF_DETAIL
 
-Here is the change summary:
-$DIFF_STAT
+Here are the STUDY files only (ignore README and script changes):
+$STUDY_FILES
+
+Here is the diff of the study files:
+$STUDY_DIFF
 
 Write a Git commit message with:
-- Subject line: max 50 chars, direct, says exactly what was done. Examples: 'Add SQL subquery practice - FROM clause', 'Python loops session 3 - list iteration'
+- Subject line: max 50 chars, direct, says exactly what was studied or practiced. Examples: 'Add SQL subquery practice - FROM clause', 'Python loops session 3 - list iteration'
 - Body: 3 lines max. Line 1: what topic or concept was covered. Line 2: what actually got done or what clicked. Line 3: one honest note about what was tricky or what clicked.
+
+IMPORTANT: The commit message should highlight what JC LEARNED or PRACTICED this session. Do NOT mention README updates, script changes, or folder structure changes — those are automated housekeeping. Focus entirely on the study content.
+
+If no study files changed (only README or scripts), write a short housekeeping commit message instead.
 
 Voice: write like JC texts a colleague. Direct, no fluff, no corporate language, no emojis, lowercase where it feels natural. Sound like a person, not a changelog.
 
