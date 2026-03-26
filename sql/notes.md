@@ -52,6 +52,51 @@ then ROUND() only what you're displaying in SELECT.
 Solved both practice problems without looking at the scaffold on the second one.
 That felt good.
 
-Next Session: Multiple Subqueries
+Next Session: Subqueries (WHERE and HAVING clause)
 
 ---
+
+## March 26, 2026 — Subqueries (WHERE and HAVING clause)
+
+Picked up where I left off — still subqueries, but now placing them
+in WHERE and HAVING instead of SELECT and FROM. Same tool, different seat.
+
+The WHERE clause version is about filtering rows before any grouping happens.
+You're essentially asking a question first — "what's the threshold?" — and
+then using that answer to decide which rows to keep. The key thing I had to
+internalize: the subquery runs first, returns a value (or a list of values),
+and the outer query uses that result as its filter condition. It's not magic —
+it's just two questions stacked, where the inner one feeds the outer one.
+
+The classic pattern is `WHERE column > (SELECT AVG(...) FROM ...)`.
+That subquery in parentheses returns one number, and the outer WHERE compares
+every row against it. Simple once you see it, but confusing when you first
+encounter it because it looks like you're comparing against a query instead
+of a value.
+
+The HAVING clause version follows the same logic, but it runs *after* GROUP BY.
+That's the key distinction — WHERE filters individual rows before aggregation,
+HAVING filters groups after aggregation. So if you want "only show me
+departments where the average salary beats the company average," you can't
+use WHERE because the group averages don't exist yet at that point.
+You need HAVING, and the subquery inside it computes the benchmark you're
+comparing against.
+
+The part that trips people up (myself included): forgetting which clause
+runs at which stage. The mental model I'm using now —
+*WHERE talks to rows, HAVING talks to groups.*
+If you're filtering something that requires aggregation to compute, it goes
+in HAVING. If it's a raw row-level comparison, it goes in WHERE.
+
+One pattern worth locking in: correlated subqueries inside WHERE.
+These are different from the regular ones because the inner query
+*references the outer query's current row*. It re-runs for every row,
+which makes it powerful but slower on big tables. Good to know it exists,
+but something to use deliberately.
+
+Also reinforced: IN vs comparison operators matter here.
+Use `= (subquery)` when you're sure it returns exactly one value.
+Use `IN (subquery)` when it returns a list. Mixing these up causes errors
+that aren't always obvious at first glance.
+
+Next Session: CTEs
