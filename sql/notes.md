@@ -5,6 +5,20 @@ This isn't a textbook — it's just me tracking my own progress honestly.
 
 ---
 
+## March 15, 2026 — SQL Basics (The Big 6)
+
+First proper SQL session. Went through the Big 6 — SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY — and the biggest thing that stood out immediately is that the order you *write* them isn't the order SQL actually *executes* them.
+
+The written vs. execution order is the mental model I'll keep coming back to. SQL runs FROM first, then WHERE, then GROUP BY, then HAVING, then SELECT, then ORDER BY. This is why you can't reference a SELECT alias in WHERE — the alias doesn't exist yet when WHERE runs. But you *can* use it in ORDER BY, because that runs last.
+
+WHERE vs. HAVING also clicked as a real distinction, not just a technicality. WHERE filters individual rows before grouping happens. HAVING filters groups *after* GROUP BY. If your filter involves an aggregate like `AVG()`, it must go in HAVING — WHERE runs too early for that.
+
+Two smaller ones worth locking in: `IS NULL` not `= NULL` (NULL is never "equal" to anything, not even itself), and `CASE` works like if/elif/else — only the *first* matching WHEN fires. The ELSE is the catch-all.
+
+Next Session: JOINs
+
+---
+
 ## March 18, 2026 — JOINs
 
 Today was all about JOINs. I already had a rough idea of what they do from work,
