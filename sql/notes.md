@@ -114,3 +114,44 @@ Use `IN (subquery)` when it returns a list. Mixing these up causes errors
 that aren't always obvious at first glance.
 
 Next Session: CTEs
+
+## 2026-03-31 — SQL: CTEs (Common Table Expressions)
+
+**Hook:** A CTE isn't a temp table. It's a named subquery that exists only for the duration of one SQL statement — and that single distinction matters in interviews.
+
+**The concept in plain English:**
+A CTE lets you name a calculation at the top of your query so the rest of the query can reference it by name. It doesn't get stored anywhere. The moment the query finishes, it's gone. You use it when a subquery would work, but you want the logic to be readable, reusable within the same statement, or both.
+
+**Three reasons to use a CTE over a subquery:**
+1. **Complexity** — logic that builds on itself is cleaner as a named block
+2. **Reusability** — reference the same calculation multiple times without repeating it
+3. **Readability** — someone reading your query top-to-bottom can follow the logic without mentally unrolling nested subqueries
+
+**AHA moment:**
+CTEs read like a story — top to bottom, each named block setting up the next. Subqueries read inside out — you have to find the innermost query first, understand it, then work your way outward. Both can solve the same problem. But when you hand a CTE to a stakeholder or a colleague, they can follow it. A deeply nested subquery makes people reach for a whiteboard.
+
+The most common mistake with CTEs: putting logic inside the CTE that doesn't need to be there. A CTE should only contain what other parts of the query need to reference. If you're doing `ROUND()` inside it, you're pre-shaping display data in the wrong place — the CTE is for calculation, the `SELECT` is for presentation.
+
+**Syntax traps:**
+- Don't nest inside the CTE unless the value genuinely doesn't exist yet. If it's just `AVG(column)`, write it flat.
+- `ROUND()` belongs in `SELECT`, not inside the CTE. Round at display, not at calculation — the `WHERE` filter needs full precision.
+- Always alias display columns. `ROUND(avg_seat_count, 0)` as a column header is noise.
+- Missing commas in `SELECT` don't always throw errors in MySQL — they silently alias the wrong column. Always double-check multi-column selects.
+- `COUNT(non_id_column)` works but signals a bad habit. Always count on the actual identifier (`task_id`, `completion_id`), not a timestamp or label.
+
+**Practice exercise recap (medium — CTE with multi-table join):**
+Business problem: *Which workspaces have at least one task completion?*
+
+Key decisions made:
+- Join path: `workspaces` → `teams` → `tasks` / `task_completions`
+- `tasks` and `task_completions` must join on `task_id`, not `team_id` — joining on `team_id` causes fanout (tasks incorrectly matching completions from the same team but different tasks)
+- HAVING is correct for filtering on aggregated values; WHERE runs before GROUP BY so it can't see `total_completions`
+- LEFT JOIN + WHERE on the joined table silently becomes an INNER JOIN — use INNER JOIN intentionally or move the filter to HAVING
+
+**Senior patterns to remember:**
+- Always surface workspace/entity *name* in output, not just ID — stakeholders don't read ID columns
+- Add a derived metric like `completion_rate_pct` — raw counts tell you what happened, rates tell you what it means
+- Name CTEs after what the dataset *is* (`workspace_completion_summary`), not how it's filtered (`total_completion_more_than_one`)
+
+**Next session pointer:**
+Multiple CTEs
