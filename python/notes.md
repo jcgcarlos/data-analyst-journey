@@ -58,4 +58,48 @@ The while loop infinite loop risk is real. Before writing any while loop, I now 
 
 The `continue` + counter order was the trickiest part. Inside a while loop, the counter increment has to come *before* the `continue` — otherwise you skip the increment, get stuck on the same element, and create an infinite loop.
 
+Next Session: Useful Operators
+
+---
+
+## April 4, 2026 — Useful Operators
+
+A grab-bag session — `zip()`, `enumerate()`, `in`/`not in`, `is`, and the `random` module. No single big concept, just a set of tools that show up constantly once you're writing real code.
+
+The one worth drilling: `zip()` pairs up items from two or more lists into tuples. The catch is it silently stops at the shortest list — no error, no warning, just dropped items. That's the kind of thing that causes wrong output with no traceback to point at.
+
+`is` vs `==` is subtle but important. `==` checks if two values are equal. `is` checks if they're literally the same object in memory. They'll agree most of the time, but the safe rule: use `==` for comparisons, use `is` only when checking against `None`. Writing `if x is None:` is the idiom — not `if x == None:`.
+
+`random.shuffle()` is another in-place trap. It modifies the list and returns `None` — same pattern as `.sort()`. Assigning the result to a variable gives you `None`, not the shuffled list.
+
+Next Session: List Comprehensions
+
+---
+
+## April 4, 2026 — List Comprehensions
+
+A one-liner for building a list from another iterable. The pattern: `[expression for item in iterable]`. Add a filter: `[expression for item in iterable if condition]`.
+
+The mental model that made it click: it's just a `for` loop where every iteration returns a value and Python collects them into a list automatically. Once I stopped treating the syntax as its own thing and just read it as a compressed loop, it made sense.
+
+Reading order matters: the left side is what you do to each item, the right side is where the items come from. The filter `if` runs before the expression — so it's loop → filter → transform, left to right.
+
+The trap worth remembering: nested list comprehensions exist, but they degrade fast. If it takes more than a second to parse, write the full loop. Readability wins, especially in anything collaborative.
+
+Next Session: Statements Assessment
+
+---
+
+## April 4, 2026 — Statements Assessment
+
+Wrapped up Section 5 with the full statements assessment — conditionals, loops, operators, list comprehensions all in one go.
+
+Two mistakes worth logging because they're the kind that don't throw errors, they just give you wrong output.
+
+First one: FizzBuzz condition order. I had the conditions in the wrong sequence, which meant the FizzBuzz case (divisible by both 3 and 5) never fired correctly. The rule for any chained conditional: most specific case goes first. Divisible by both 3 and 5 is a stricter condition than divisible by just one of them — it has to be checked before either of the individual branches, otherwise Python hits the `elif 3` or `elif 5` branch first and exits. Order isn't cosmetic in conditionals, it's logic.
+
+Second one: `x%3 and x%5 == 0`. Looks reasonable, doesn't work. Python applies `==` before `and`, so this actually evaluates as `x%3 and (x%5 == 0)` — treating `x%3` as truthy or falsy instead of comparing it to zero. A non-zero remainder is truthy, so numbers not divisible by 3 still pass that half of the check. The correct form is `x%3 == 0 and x%5 == 0` — both sides need the explicit comparison.
+
+Section 5 is done. Next up is Section 6: Functions — where reusable, testable code actually begins.
+
 Next Session: Functions
