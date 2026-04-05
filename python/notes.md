@@ -103,3 +103,221 @@ Second one: `x%3 and x%5 == 0`. Looks reasonable, doesn't work. Python applies `
 Section 5 is done. Next up is Section 6: Functions — where reusable, testable code actually begins.
 
 Next Session: Functions
+
+## April 6, 2025 — Functions, Methods, and *args / **kwargs
+
+Two notebooks in one session. Started with the fundamentals of functions and methods, then moved into one of the more practically useful patterns in Python: flexible function signatures with `*args` and `**kwargs`.
+
+---## April 6, 2025 — Functions, Methods, and *args / **kwargs
+
+Two notebooks in one session. Started with the fundamentals of functions and methods, then moved into one of the more practically useful patterns in Python: flexible function signatures with `*args` and `**kwargs`.
+
+---
+
+### What I covered
+
+**Methods vs Functions**
+Methods are functions that belong to an object — called with `object.method()`. Functions are standalone and called directly. The difference matters when you're reading someone else's code and trying to figure out what a line is actually doing.
+
+**Functions**
+The `def` keyword defines a reusable block of code. The core insight: write a function when you're about to copy-paste the same logic twice. Functions can return values, return tuples (useful for unpacking multiple results), and contain full logic like loops and conditionals inside them.
+
+One pattern worth remembering — the placement of `return` relative to a loop changes behavior completely:
+- `return` *inside* the loop exits on the first match
+- `return` *outside* the loop (aligned with `for`) waits until all iterations finish
+
+**`*args` — Variable Positional Arguments**
+Lets a function accept any number of positional arguments (no labels). Python packs them into a **tuple** inside the function.
+
+```python
+def total(*args):
+    return sum(args)
+
+total(100, 200, 300)  # → 600
+```
+
+Use when you don't know how many values will be passed, but they're all the same *kind* of thing — amounts, scores, IDs.
+
+**`**kwargs` — Variable Keyword Arguments**
+Lets a function accept any number of keyword arguments (`name=value` pairs). Python packs them into a **dictionary**.
+
+```python
+def show_info(**kwargs):
+    for key, value in kwargs.items():
+        print(f"{key}: {value}")
+
+show_info(currency="PHP", region="NCR")
+```
+
+Use when you want optional, named metadata that varies per call.
+
+**Order when using both:**
+`regular args → *args → **kwargs`
+
+```python
+def summary(label, *args, **kwargs):
+    ...
+```
+
+---
+
+### AHA moment
+
+The bug I wrote first — accessing `kwargs['currency']` directly — *works* until someone doesn't pass `currency`. That's a `KeyError` waiting in production. The fix isn't just a loop; it's understanding that `**kwargs` exists precisely because you *don't* know what's coming in. Hardcoding the keys defeats the whole point.
+
+Number formatting was also a quiet unlock: `{sum(args):,.2f}` — a comma separator and two decimal places — turns raw output into something that looks like a report. One format spec, zero extra code.
+
+---
+
+### Patterns and traps
+
+- `*args` → tuple inside the function. `**kwargs` → dictionary inside the function.
+- Accessing `kwargs` keys directly (`kwargs['key']`) will crash if that key wasn't passed. Always loop with `.items()` instead.
+- `len(args)` gives you the count. `args` alone prints the raw tuple — not what you want in output.
+- Return placement inside vs. outside a loop is not cosmetic. It changes what the function actually does.
+- Financial output: always format with `:,.2f`. It's a small habit that reads as professional.
+
+---
+
+### Exercise — `transaction_summary`
+
+Built a fintech batch reporting function combining all three: a required `batch_name`, transaction amounts via `*args`, and optional metadata via `**kwargs`.
+
+```python
+def transaction_summary(batch_name, *args, **kwargs):
+    print(f"Batch: {batch_name}")
+    print(f"Transactions: {len(args)}")
+    print(f"Total Amount: {sum(args):,.2f}")
+
+    for key, value in kwargs.items():
+        print(f"  {key}: {value}")
+```
+
+Called with:
+```python
+transaction_summary(
+    "Batch_Oct01",
+    500, 1200, 340, 875,
+    currency="PHP",
+    region="NCR",
+    analyst="JC"
+)
+```
+
+Output:
+```
+Batch: Batch_Oct01
+Transactions: 4
+Total Amount: 2,915.00
+  currency: PHP
+  region: NCR
+  analyst: JC
+```
+
+---
+
+*Next session: Lambda functions and map/filter.*
+
+### What I covered
+
+**Methods vs Functions**
+Methods are functions that belong to an object — called with `object.method()`. Functions are standalone and called directly. The difference matters when you're reading someone else's code and trying to figure out what a line is actually doing.
+
+**Functions**
+The `def` keyword defines a reusable block of code. The core insight: write a function when you're about to copy-paste the same logic twice. Functions can return values, return tuples (useful for unpacking multiple results), and contain full logic like loops and conditionals inside them.
+
+One pattern worth remembering — the placement of `return` relative to a loop changes behavior completely:
+- `return` *inside* the loop exits on the first match
+- `return` *outside* the loop (aligned with `for`) waits until all iterations finish
+
+**`*args` — Variable Positional Arguments**
+Lets a function accept any number of positional arguments (no labels). Python packs them into a **tuple** inside the function.
+
+```python
+def total(*args):
+    return sum(args)
+
+total(100, 200, 300)  # → 600
+```
+
+Use when you don't know how many values will be passed, but they're all the same *kind* of thing — amounts, scores, IDs.
+
+**`**kwargs` — Variable Keyword Arguments**
+Lets a function accept any number of keyword arguments (`name=value` pairs). Python packs them into a **dictionary**.
+
+```python
+def show_info(**kwargs):
+    for key, value in kwargs.items():
+        print(f"{key}: {value}")
+
+show_info(currency="PHP", region="NCR")
+```
+
+Use when you want optional, named metadata that varies per call.
+
+**Order when using both:**
+`regular args → *args → **kwargs`
+
+```python
+def summary(label, *args, **kwargs):
+    ...
+```
+
+---
+
+### AHA moment
+
+The bug I wrote first — accessing `kwargs['currency']` directly — *works* until someone doesn't pass `currency`. That's a `KeyError` waiting in production. The fix isn't just a loop; it's understanding that `**kwargs` exists precisely because you *don't* know what's coming in. Hardcoding the keys defeats the whole point.
+
+Number formatting was also a quiet unlock: `{sum(args):,.2f}` — a comma separator and two decimal places — turns raw output into something that looks like a report. One format spec, zero extra code.
+
+---
+
+### Patterns and traps
+
+- `*args` → tuple inside the function. `**kwargs` → dictionary inside the function.
+- Accessing `kwargs` keys directly (`kwargs['key']`) will crash if that key wasn't passed. Always loop with `.items()` instead.
+- `len(args)` gives you the count. `args` alone prints the raw tuple — not what you want in output.
+- Return placement inside vs. outside a loop is not cosmetic. It changes what the function actually does.
+- Financial output: always format with `:,.2f`. It's a small habit that reads as professional.
+
+---
+
+### Exercise — `transaction_summary`
+
+Built a fintech batch reporting function combining all three: a required `batch_name`, transaction amounts via `*args`, and optional metadata via `**kwargs`.
+
+```python
+def transaction_summary(batch_name, *args, **kwargs):
+    print(f"Batch: {batch_name}")
+    print(f"Transactions: {len(args)}")
+    print(f"Total Amount: {sum(args):,.2f}")
+
+    for key, value in kwargs.items():
+        print(f"  {key}: {value}")
+```
+
+Called with:
+```python
+transaction_summary(
+    "Batch_Oct01",
+    500, 1200, 340, 875,
+    currency="PHP",
+    region="NCR",
+    analyst="JC"
+)
+```
+
+Output:
+```
+Batch: Batch_Oct01
+Transactions: 4
+Total Amount: 2,915.00
+  currency: PHP
+  region: NCR
+  analyst: JC
+```
+
+---
+
+*Next session: Lambda functions and map/filter.*
