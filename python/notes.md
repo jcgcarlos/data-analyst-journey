@@ -321,3 +321,39 @@ Total Amount: 2,915.00
 ---
 
 *Next session: Lambda functions and map/filter.*
+
+## April 6, 2026 — Lambda, map(), and filter()
+
+Three tools that let you do more with less code — once you stop treating the syntax like it's something special.
+
+`lambda` is just a throwaway function. No `def`, no name, no extra lines — you write the logic inline and move on. On its own it's fine, but it's most useful when passed directly into `map()` or `filter()`.
+
+`map()` applies a function to every item in a list and returns the transformed results. `filter()` applies a True/False test to every item and keeps only the ones that pass. The two naturally chain together: filter first to narrow down your data, then map to transform what's left. That filter → transform sequence is a real data pipeline pattern — not just a Python exercise.
+
+The AHA moment: both `map()` and `filter()` return objects, not lists. Wrapping them in `list()` is not optional — it's how you actually get the values out. Easy to miss, causes confusing output when you do.
+
+The other thing worth flagging: floating point noise. `1200 * 1.025` can return `1229.9999999999998` instead of `1230.0`. That's not a bug — it's how Python handles decimal math internally. In real pipelines, round the output: `round(x * 1.025, 2)`.
+```python
+# lambda — basic structure
+lambda argument: expression
+
+# map() — transform every item
+list(map(lambda x: x * 1.025, transactions))
+
+# filter() — keep only items that pass a condition
+list(filter(lambda x: x > 10000, transactions))
+
+# the real-world pattern: filter → map
+flagged = list(filter(lambda x: x > 10000, transactions))
+with_hold = list(map(lambda x: x * 1.01, flagged))
+```
+
+Common traps:
+- Forgetting `list()` — you'll get a map/filter object with no visible values
+- Floating point output — always round financial results in production code
+
+Exercise 1 was straightforward: apply a 2.5% processing fee to a list of transaction amounts using `map()` + `lambda`. Worked on the first try, float noise noted.
+
+Exercise 2 was the more realistic one — a GCash risk flagging pipeline. Filter transactions above ₱10,000, then apply a 1% compliance hold to each flagged amount. Output matched exactly: `[12120.0, 45450.0, 11615.0]`. The two-step filter → transform structure is the part worth remembering.
+
+Next Session: Functions deep dive / pandas intro
