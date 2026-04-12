@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ----------------------------------------
-# Study Session Commit Script
+# Data Analyst Journey Commit Script
 # Run after every study session: bash commit_session.sh
 # ----------------------------------------
 
@@ -29,36 +29,49 @@ echo ""
 # GENERATE COMMIT MESSAGE
 # ----------------------------------------
 
-# Filter to only study files (exclude READMEs, scripts, config)
-STUDY_FILES=$(echo "$DIFF_DETAIL" | grep -v "README.md" | grep -v "commit_session.sh" | grep -v ".txt" || true)
+# Filter to core session deliverables — SQL files, markdown notes, notebooks, Python scripts
+DELIVERABLE_FILES=$(echo "$DIFF_DETAIL" | grep -E "\.(sql|md|py|ipynb)$" | grep -v "README.md" | grep -v "commit_session.sh" || true)
 
-# If there are study files, get their diff for context
-if [ -n "$STUDY_FILES" ]; then
-  STUDY_DIFF=$(git diff --staged -- $STUDY_FILES | head -500)
+# If there are deliverable files, get their diff for context
+if [ -n "$DELIVERABLE_FILES" ]; then
+  DELIVERABLE_DIFF=$(git diff --staged -- $DELIVERABLE_FILES | head -500)
 else
-  STUDY_DIFF=""
+  DELIVERABLE_DIFF=""
 fi
 
-COMMIT_MSG=$(claude -p "You are writing a Git commit message for JC, a BI Specialist upskilling toward a Senior Data Analyst role. JC studies SQL, Python, Statistics, and Looker/LookML.
+COMMIT_MSG=$(claude -p "You are writing a Git commit message for JC's learning repo: data-analyst-journey. JC is a BI Specialist actively upskilling toward a Senior Data Analyst role in fintech, SaaS, or e-commerce. This repo tracks his weekly study sessions across three tracks.
+
+The three learning tracks:
+- SQL: progressing through foundations (filtering, aggregation, string/date manipulation, data cleaning) → intermediate (JOINs, CTEs, subqueries, set operations, window functions) → advanced (business case studies, full analysis projects)
+- Python: pandas fundamentals, data cleaning, EDA, visualization (matplotlib/seaborn)
+- LookML/Looker: views, dimensions, measures, explores, model/explore wiring, derived tables
+
+Key repo conventions:
+- SQL exercises are themed around fintech/SaaS/e-commerce business scenarios (never BPO)
+- notes.md entries are written in JC's voice — first-person learning journal, feeds his LinkedIn series 'AHA Moments for an Analyst'
+- .ipynb notebooks follow a structured format: markdown cells for context, code cells for execution, summary tables
 
 Here are ALL files changed this session:
 $DIFF_DETAIL
 
-Here are the STUDY files only (ignore README and script changes):
-$STUDY_FILES
+Here are the core deliverable files only (SQL, Python, notebooks, notes):
+$DELIVERABLE_FILES
 
-Here is the diff of the study files:
-$STUDY_DIFF
+Here is the diff of the deliverable files:
+$DELIVERABLE_DIFF
 
 Write a Git commit message with:
-- Subject line: max 50 chars, direct, says exactly what was studied or practiced. Examples: 'Add SQL subquery practice - FROM clause', 'Python loops session 3 - list iteration'
-- Body: 3 lines max. Line 1: what topic or concept was covered. Line 2: what actually got done or what clicked. Line 3: one honest note about what was tricky or what clicked.
+- Subject line: max 50 chars. Name the CONCEPT or SKILL being built — frame it as what JC can now do, not what file was added. Bad: 'Add window functions SQL exercise'. Good: 'SQL: rank users by transaction value with DENSE_RANK'. For notes.md commits, surface the core insight, not just 'update notes'.
+- Body: 3 lines max.
+  Line 1: what concept or technique was practiced and what business question it answers.
+  Line 2: what clicked, what was tricky, or what pattern will stick — the real learning signal.
+  Line 3: what this session sets up next — show the progression, not just task completion.
 
-IMPORTANT: The commit message should highlight what JC LEARNED or PRACTICED this session. Do NOT mention README updates, script changes, or folder structure changes — those are automated housekeeping. Focus entirely on the study content.
+IMPORTANT: This repo is public and will be seen by hiring managers and senior analysts. Write like someone who is serious about their craft and intentional about their growth. Never describe file mechanics (added X lines, updated Y file) — describe the analytical skill being built. Do NOT mention README updates, script changes, or folder structure changes unless they are the only thing committed.
 
-If no study files changed (only README or scripts), write a short housekeeping commit message instead.
+If only non-deliverable files changed (scripts, config, README), write a short housekeeping commit message instead.
 
-Voice: write like JC texts a colleague. Direct, no fluff, no corporate language, no emojis, lowercase where it feels natural. Sound like a person, not a changelog.
+Voice: direct, sharp, no fluff, no corporate language, no emojis, lowercase where it feels natural. Reads like a focused analyst, not a task log.
 
 Output the commit message only. Nothing else. No explanation.")
 

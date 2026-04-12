@@ -218,110 +218,6 @@ Total Amount: 2,915.00
 
 *Next session: Lambda functions and map/filter.*
 
-### What I covered
-
-**Methods vs Functions**
-Methods are functions that belong to an object — called with `object.method()`. Functions are standalone and called directly. The difference matters when you're reading someone else's code and trying to figure out what a line is actually doing.
-
-**Functions**
-The `def` keyword defines a reusable block of code. The core insight: write a function when you're about to copy-paste the same logic twice. Functions can return values, return tuples (useful for unpacking multiple results), and contain full logic like loops and conditionals inside them.
-
-One pattern worth remembering — the placement of `return` relative to a loop changes behavior completely:
-- `return` *inside* the loop exits on the first match
-- `return` *outside* the loop (aligned with `for`) waits until all iterations finish
-
-**`*args` — Variable Positional Arguments**
-Lets a function accept any number of positional arguments (no labels). Python packs them into a **tuple** inside the function.
-
-```python
-def total(*args):
-    return sum(args)
-
-total(100, 200, 300)  # → 600
-```
-
-Use when you don't know how many values will be passed, but they're all the same *kind* of thing — amounts, scores, IDs.
-
-**`**kwargs` — Variable Keyword Arguments**
-Lets a function accept any number of keyword arguments (`name=value` pairs). Python packs them into a **dictionary**.
-
-```python
-def show_info(**kwargs):
-    for key, value in kwargs.items():
-        print(f"{key}: {value}")
-
-show_info(currency="PHP", region="NCR")
-```
-
-Use when you want optional, named metadata that varies per call.
-
-**Order when using both:**
-`regular args → *args → **kwargs`
-
-```python
-def summary(label, *args, **kwargs):
-    ...
-```
-
----
-
-### AHA moment
-
-The bug I wrote first — accessing `kwargs['currency']` directly — *works* until someone doesn't pass `currency`. That's a `KeyError` waiting in production. The fix isn't just a loop; it's understanding that `**kwargs` exists precisely because you *don't* know what's coming in. Hardcoding the keys defeats the whole point.
-
-Number formatting was also a quiet unlock: `{sum(args):,.2f}` — a comma separator and two decimal places — turns raw output into something that looks like a report. One format spec, zero extra code.
-
----
-
-### Patterns and traps
-
-- `*args` → tuple inside the function. `**kwargs` → dictionary inside the function.
-- Accessing `kwargs` keys directly (`kwargs['key']`) will crash if that key wasn't passed. Always loop with `.items()` instead.
-- `len(args)` gives you the count. `args` alone prints the raw tuple — not what you want in output.
-- Return placement inside vs. outside a loop is not cosmetic. It changes what the function actually does.
-- Financial output: always format with `:,.2f`. It's a small habit that reads as professional.
-
----
-
-### Exercise — `transaction_summary`
-
-Built a fintech batch reporting function combining all three: a required `batch_name`, transaction amounts via `*args`, and optional metadata via `**kwargs`.
-
-```python
-def transaction_summary(batch_name, *args, **kwargs):
-    print(f"Batch: {batch_name}")
-    print(f"Transactions: {len(args)}")
-    print(f"Total Amount: {sum(args):,.2f}")
-
-    for key, value in kwargs.items():
-        print(f"  {key}: {value}")
-```
-
-Called with:
-```python
-transaction_summary(
-    "Batch_Oct01",
-    500, 1200, 340, 875,
-    currency="PHP",
-    region="NCR",
-    analyst="JC"
-)
-```
-
-Output:
-```
-Batch: Batch_Oct01
-Transactions: 4
-Total Amount: 2,915.00
-  currency: PHP
-  region: NCR
-  analyst: JC
-```
-
----
-
-*Next session: Lambda functions and map/filter.*
-
 ## April 6, 2026 — Lambda, map(), and filter()
 
 Three tools that let you do more with less code — once you stop treating the syntax like it's something special.
@@ -357,3 +253,31 @@ Exercise 1 was straightforward: apply a 2.5% processing fee to a list of transac
 Exercise 2 was the more realistic one — a GCash risk flagging pipeline. Filter transactions above ₱10,000, then apply a 1% compliance hold to each flagged amount. Output matched exactly: `[12120.0, 45450.0, 11615.0]`. The two-step filter → transform structure is the part worth remembering.
 
 Next Session: Functions deep dive / pandas intro
+
+## April 12, 2026 — OOP Basics & Pandas Series (Bridge Session)
+
+Two topics in one session — OOP to close out the bootcamp chapter, and pandas Series to officially start Phase 2.
+
+OOP clicked differently once I stopped thinking about it as a developer thing. The mental shift: a class is just a template, and every object is a filled-in copy of that template. A `Transaction` class defines what every transaction looks like — `transaction_id`, `amount`, `status`. Each actual transaction is an object built from that template. That's it. The reason it matters for analysts isn't that you'll build class hierarchies all day — you won't. It's that every tool you already use is built this way. Every time you write `df.groupby()` or `df.describe()`, you're calling methods on a DataFrame object. Someone wrote a `DataFrame` class so you don't have to. Understanding OOP means you stop being confused by the code you're already using and start reading documentation like it was written for you.
+
+The bug that taught me the most: `user_1.deposit = 1000` vs `user_1.deposit(1000)`. The first one doesn't call the method — it overwrites it. After that line, `deposit` is no longer a function on the object, it's just a variable holding `1000`. The second assignment replaces it with `500`. By the time `summary()` runs, the balance list is still empty, so it returns zero. The fix is obvious in hindsight, but the lesson is real: `=` assigns, `()` calls. Don't mix them up on object attributes.
+
+The other thing worth logging: don't add complexity you don't need. My first attempt had a separate `total_balance()` method that summed a list of deposits. Clean solution, but unnecessary once I realized `deposit()` could just update `self.balance` directly. One attribute, one method, same result — less to break.
+
+Pandas Series was the real unlock of the session. A Series is a one-dimensional labeled array — think of it as a single spreadsheet column where every value has a label (the index) instead of just a position number. On its own it's fine, but the part that actually matters: every column you pull from a DataFrame is a Series. `df["transaction_amount"]` doesn't give you a list — it gives you a Series. And the moment you have a Series, you get `.sum()`, `.mean()`, `.max()` for free. No loops, no manual math. That's the daily analyst use case — pull a column, aggregate it, move on.
+
+The index is where it gets useful beyond that. When your data is labeled by something meaningful — a date, a user ID, a merchant name — you can slice exactly what you need. `daily_revenue["2024-01-02"]` pulls one day's revenue directly. That's the kind of access pattern you'd use on time-series data: transaction volumes by day, monthly active users, weekly revenue trends.
+
+```python
+daily_revenue = pd.Series(
+    [45000, 62000, 38000, 71000, 55000],
+    index=["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05"]
+)
+
+daily_revenue["2024-01-02"]  # → 62000
+daily_revenue.mean()         # → 54200.0
+```
+
+Also switched courses today — moving from Portilla's Python Bootcamp to his Data Science & ML Bootcamp for pandas. The bootcamp covered the language. This one covers the tools. The switch made sense.
+
+Next Session: DataFrames
