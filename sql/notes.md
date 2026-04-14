@@ -154,4 +154,76 @@ Key decisions made:
 - Name CTEs after what the dataset *is* (`workspace_completion_summary`), not how it's filtered (`total_completion_more_than_one`)
 
 **Next session pointer:**
-Multiple CTEs
+Recursive CTEs
+
+## April 14, 2026 — Recursive CTEs
+
+Recursive CTEs are the one CTE variant that feels like actual programming logic
+inside SQL. A regular CTE runs once and hands you a result. A recursive CTE loops —
+it runs the anchor once to get a starting point, then keeps running the recursive
+part on its own output until the stopping condition is false.
+
+The structure is always the same: two SELECT blocks connected by UNION ALL.
+The anchor is the seed value. The recursive part references the CTE by name
+and builds on what the previous round returned. The WHERE clause is your exit —
+without it, MySQL hits the 1,000 iteration limit and kills the query.
+
+The most practical use case right away: date spines. If you need every date in
+January for a daily trend report, you can't pull it from the transactions table
+because days with zero activity don't exist there. A recursive CTE generates
+the full sequence — then you LEFT JOIN your activity data onto it so zero-days
+show up as NULL instead of just disappearing from the report entirely.
+
+**AHA moment:** UNION ALL is not optional here. UNION removes duplicates, and
+since recursive CTEs build incrementally on previous output, removing duplicates
+breaks the chain. The loop either stops early or behaves unpredictably. Always
+UNION ALL in recursive CTEs, even if you think there won't be duplicates.
+
+Syntax trap: don't name your output column `date`, `day`, or `year` — these are
+reserved words in MySQL and will throw confusing errors. Use `report_date`, `dt`,
+or `period` instead. Also cast your anchor date string explicitly:
+`CAST('2024-01-01' AS DATE)` — don't rely on implicit conversion or the column
+type downstream might not behave as expected.
+
+Next Session: Window Functions — RANK & DENSE_RANK
+
+## April 15, 2026 — Window Functions: RANK & DENSE_RANK
+
+Honestly, half this session was debugging MySQL before a single query got written.
+Server was down, fintech_analytics was gone, and we had to rebuild the whole database
+from scratch using a generated seed script. Annoying detour, but the database is back
+and now there's actually a seed file saved in project-vela so it never disappears again.
+
+Lesson zero: always commit your setup scripts.
+
+On to the actual SQL. RANK and DENSE_RANK are siblings of ROW_NUMBER — all three
+rank rows, but they handle ties differently. ROW_NUMBER doesn't care about ties,
+it just keeps counting (1, 2, 3). RANK acknowledges the tie but skips the next
+position (1, 1, 3). DENSE_RANK acknowledges the tie and doesn't skip anything (1, 1, 2).
+The difference only matters when there are tied values, but when it matters, it really matters.
+Telling a stakeholder "you're ranked 3rd" when there's a gap because of a skip is the
+kind of thing that starts a meeting you don't want to be in.
+
+**AHA moment:** You can't filter on a window function result with WHERE in the same query
+— not because the syntax is wrong, but because of execution order. WHERE runs before
+SELECT, so the rank alias doesn't exist yet when the filter is applied. The fix is a
+second CTE: compute the ranks in CTE 1, then filter in the outer SELECT where the
+column finally exists. This is the standard pattern and it comes up constantly.
+
+Two bugs worth remembering from today. First: `WHERE rank_position AND dense_rank_position IN (1,2,3)`
+doesn't do what it looks like. MySQL reads `rank_position` alone as a boolean — any
+non-zero number is TRUE — so that half of the condition never actually filters anything.
+Write it as `WHERE rank_position <= 3` and mean it. Second: CTEs can't live inside a
+subquery in MySQL. `SELECT * FROM (WITH ... )` throws a syntax error. Chain CTEs at the
+top of the statement instead — it reads cleaner anyway.
+
+Senior pattern picked up today: the named WINDOW clause. When RANK and DENSE_RANK
+share the same OVER definition, define it once with `WINDOW w AS (...)` and reference
+it as `OVER w`. One place to update if the partition or sort changes.
+
+Also confirmed today that `total_spent` should always filter `WHERE status = 'completed'`.
+Including failed and pending transactions inflates spend numbers silently — the query runs
+fine but the output is wrong. That's the kind of mistake that gets caught in a stakeholder
+review, not in testing.
+
+Next Session: NTILE or LAG/LEAD — navigation functions.
