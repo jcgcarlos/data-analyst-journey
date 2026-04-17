@@ -226,4 +226,73 @@ Including failed and pending transactions inflates spend numbers silently — th
 fine but the output is wrong. That's the kind of mistake that gets caught in a stakeholder
 review, not in testing.
 
-Next Session: NTILE or LAG/LEAD — navigation functions.
+Next Session: FIRST_VALUE(), LAST_VALUE(), NTH_VALUE()
+
+## 2025-04-18 — FIRST_VALUE, LAST_VALUE, NTH_VALUE
+
+Tonight's session was about a specific family of window functions that don't rank rows
+or number them — they reach into a sorted partition and pull the actual value from a
+target row. FIRST_VALUE grabs the first, LAST_VALUE the last, NTH_VALUE the nth.
+The key mental shift: these return data, not position numbers.
+
+### The Frame Clause — The Gotcha Nobody Warns You About
+
+MySQL's default window frame is `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`.
+That sounds harmless until you use LAST_VALUE — because "last" is only evaluated
+against rows the function has already seen. On row 1, it sees row 1. On row 3,
+it sees rows 1–3. It never sees the true last row unless you explicitly tell it to.
+
+Fix: always add the frame clause to LAST_VALUE and NTH_VALUE:
+```sql
+ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+```
+FIRST_VALUE doesn't need it — the first row is always already behind you.
+
+### AHA Moment
+
+I built the CTE first out of habit, aggregating to user-level totals before applying
+the window functions. The query ran fine — but it answered the wrong question.
+The brief said "per transaction." I answered "per user total spend."
+
+Technically clean. Logically wrong. The fix wasn't complex SQL — it was reading
+the business question more carefully before writing a single line.
+No aggregation needed when you're working at the transaction level. Skip the CTE,
+apply window functions directly on the raw rows.
+
+### Stakeholder Translation
+
+Started by describing what the columns show (junior move). Pushed to frame it
+in terms of what the business can *do* with the result:
+
+> "For every completed transaction, this shows how that transaction sits relative
+> to the top, bottom, and 3rd highest in its segment. Risk can use this to flag
+> outliers — transactions that are unusually large or suspiciously small for
+> that user type — without writing a separate query."
+
+Framework to internalize: What did the query produce? → What does it mean for
+the business? → What decision or action does it enable? Senior answers always
+land on #3.
+
+### Patterns to Watch
+
+- Reaching for a CTE before confirming whether aggregation is actually needed.
+  Ask first: does the business question require collapsing rows, or can I work
+  on raw data directly?
+- Repeating ROUND() inside every window function. Round once in the CTE or
+  SELECT, reference the alias everywhere.
+
+### Syntax Reference
+
+```sql
+-- Does not need frame clause
+FIRST_VALUE(column) OVER (PARTITION BY ... ORDER BY ...)
+
+-- Needs frame clause
+LAST_VALUE(column)   OVER (PARTITION BY ... ORDER BY ...
+                           ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+NTH_VALUE(column, n) OVER (PARTITION BY ... ORDER BY ...
+                           ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+```
+
+### Next Session:
+Window functions - LEAD & LAG
